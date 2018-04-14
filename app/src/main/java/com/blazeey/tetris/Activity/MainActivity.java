@@ -6,6 +6,8 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
+import android.view.View;
+import android.widget.ImageButton;
 
 import com.blazeey.tetris.Adapters.GridAdapter;
 import com.blazeey.tetris.Models.Block;
@@ -26,7 +28,9 @@ public class MainActivity extends AppCompatActivity implements GridAdapter.BoxTo
     Context context;
     Map<Integer,Box> boxMap;
     List<Block> blockList;
+    List<Integer> removedBlockList = new ArrayList<>();
     GridAdapter.BoxTouchListener listener;
+    ImageButton refresh;
 
     private static final int TEMP_BLOCK = 477;
 
@@ -37,7 +41,9 @@ public class MainActivity extends AppCompatActivity implements GridAdapter.BoxTo
         context = this;
         listener = this;
 
+        //Recycler View And Adapter
         recyclerView = findViewById(R.id.grid);
+        refresh = findViewById(R.id.refresh);
         gridLayoutManager = new GridLayoutManager(context,6,GridLayoutManager.VERTICAL,false);
         recyclerView.setLayoutManager(gridLayoutManager);
 
@@ -45,6 +51,18 @@ public class MainActivity extends AppCompatActivity implements GridAdapter.BoxTo
         blockList = Block.initialConfiguration();
         gridAdapter = new GridAdapter(this,boxMap,listener);
         recyclerView.setAdapter(gridAdapter);
+
+        refresh.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                boxMap = Box.initialConfiguration();
+                blockList = Block.initialConfiguration();
+                removedBlockList = new ArrayList<>();
+                gridAdapter = new GridAdapter(context,boxMap,listener);
+                recyclerView.setAdapter(gridAdapter);
+
+            }
+        });
 
 //        remove(8);
 //        remove(5);
@@ -56,17 +74,20 @@ public class MainActivity extends AppCompatActivity implements GridAdapter.BoxTo
 
     }
 
+    /**
+     * Moves the block downward
+     * @param block Block which is to be moved
+     */
     void move(Block block){
 
-//        if(block.getBlock()==1)
-//            return;
         Log.v("move",block.getBlock()+"");
+
         List<Integer> boxes = block.getBoxList();
         Collections.sort(boxes);
         Collections.reverse(boxes);
         for(int i:boxes){
-//            Log.v("Move",i+"");
-            //Change box
+
+            //Getting the box and block details
             Box newBox = boxMap.get(i+6);
             Box currentBox = boxMap.get(i);
             if(currentBox.getBlock()==0) {
@@ -75,6 +96,7 @@ public class MainActivity extends AppCompatActivity implements GridAdapter.BoxTo
             }
             Block blockInGrid = blockList.get(currentBox.getBlock()-1);
 
+            //Updating the box details
             currentBox.setBlock(0);
             newBox.setBlock(blockInGrid.getBlock());
             boxMap.remove(i);
@@ -82,6 +104,7 @@ public class MainActivity extends AppCompatActivity implements GridAdapter.BoxTo
             boxMap.put(i,currentBox);
             boxMap.put(i+6,newBox);
 
+            //Updating the block details
             List<Integer> boxesInBlock = new ArrayList<>(blockInGrid.getBoxList());
             int index = boxesInBlock.indexOf(i);
             boxesInBlock.remove(index);
@@ -97,6 +120,11 @@ public class MainActivity extends AppCompatActivity implements GridAdapter.BoxTo
         recyclerView.setAdapter(gridAdapter);
     }
 
+    /**
+     * Returns if the block has boxes in the last line of the grid
+     * @param block Block that needs to be checked
+     * @return <tt>true</tt> if block spans last row. <ff>false</ff>if block does not span last row.
+     */
     boolean hasLastLine(Block block){
         for(int i:block.getBoxList()){
             if(i>54&&i<=60)
@@ -105,25 +133,28 @@ public class MainActivity extends AppCompatActivity implements GridAdapter.BoxTo
         return false;
     }
 
+    /**
+     * Function checks if the given block can be moved downwards and moves if it can.
+     * @param block Required block that needs to be checked
+     * @return <tt>true</tt> if the block can be moved downwards. <ff>false</ff>if block cannot be moved.
+     */
     boolean isMovable(Block block){
 
         Log.v("isMovable",block.getBlock()+"");
         if(hasLastLine(block)){
             return false;
         }
-//        Block block = blockList.get(blockNum-1);
         List<Block> fuseBlock = new ArrayList<>();
         boolean isAllMovable = true;
         for (int i:block.getBoxList()){
             int nextBox = i+6;
-//            Log.v("NextBox",nextBox+"");
             if(nextBox>60) {
                 Log.v("NextBox>60",block.getBlock()+"");
                 return false;
             }
-//            Log.v("Box",boxMap.get(nextBox).getBlock()+"");
             Box next = boxMap.get(nextBox);
             if(block.getBlock()==TEMP_BLOCK){
+                //Check Fusing
                 if(!block.getBoxList().contains(nextBox) && next.getBlock()!=0){
                     fuseBlock.add(blockList.get(boxMap.get(nextBox).getBlock()-1));
                     Log.v("Fusing",boxMap.get(nextBox).getBlock()+"");
@@ -131,7 +162,7 @@ public class MainActivity extends AppCompatActivity implements GridAdapter.BoxTo
                 }
             }
             else if(next.getBlock()!=0 && (next.getBlock()!=block.getBlock())) {
-//                Log.v("Box","Not empty");
+                //Check Fusing
                 if(!fuseBlock.contains(blockList.get(next.getBlock()-1))) {
                     Log.v("Fusing", boxMap.get(nextBox).getBlock() + "");
                     fuseBlock.add(blockList.get(next.getBlock() - 1));
@@ -144,11 +175,10 @@ public class MainActivity extends AppCompatActivity implements GridAdapter.BoxTo
             return true;
         }
         else {
+            //Fusing the blocks
             Log.v("Box","Fusing : "+block.getBlock());
             fuseBlock.add(block);
-//            Log.v("Box","Size : "+fuseBlock.size());
             Block newBlock = fuseBlocks(fuseBlock);
-//            Log.v("Block","Size : "+newBlock.getBoxList().size());
             if(isMovable(newBlock)) {
                 Log.v("MOVE", "New block can be moved");
                 return true;
@@ -158,6 +188,11 @@ public class MainActivity extends AppCompatActivity implements GridAdapter.BoxTo
         }
     }
 
+    /**
+     * Merge the list of blocks to provide a single block which contains all the boxes of the blocks
+     * @param blocks list of blocks which need to be merged
+     * @return The block containing all the merger blocks
+     */
     Block fuseBlocks(List<Block> blocks){
         int count = 0;
         for(Block  i:blocks)
@@ -172,6 +207,10 @@ public class MainActivity extends AppCompatActivity implements GridAdapter.BoxTo
         return block;
     }
 
+    /**
+     * Remove the given block from the grid.
+     * @param blockNum the block number to be removed
+     */
     void remove(int blockNum){
         for(int i:blockList.get(blockNum-1).getBoxList()){
             Box box = boxMap.get(i);
@@ -180,40 +219,36 @@ public class MainActivity extends AppCompatActivity implements GridAdapter.BoxTo
             gridAdapter.notifyDataSetChanged();
             recyclerView.setAdapter(gridAdapter);
         }
-//        blockList.remove(blockNum-1);
     }
 
+    /**
+     * Compares all the blocks with the given block to find the blocks which are above it. Then move those blocks
+     * downwards till which they cannot be moved.
+     * @param blockNum block number which has been removed
+     */
     void moveBlocks(int blockNum){
         Log.v("moveBlocks",blockNum+"");
         Block removedBlock = blockList.get(blockNum-1);
         boolean isAnyBoxMovable = false;
         List<Block> tempBlockList = new ArrayList<>(blockList);
         Collections.reverse(tempBlockList);
-//        Collections.reverse(blockList);
         for(Block block:tempBlockList){
-//            Collections.reverse(blockList);
-            if(block.getMinLevel()<removedBlock.getMinLevel() && block.getMaxLevel()>=removedBlock.getMaxLevel()){
-                if(isMovable(block)) {
-//                    move(block);
-                    isAnyBoxMovable = true;
-//                    tempBlockList = blockList;
-                    break;
-                }
-            }
-            else if (block.getMinLevel()<removedBlock.getMinLevel() && block.getMaxLevel()<removedBlock.getMaxLevel()){
-                if(isMovable(block)) {
-//                    move(block);
-                    isAnyBoxMovable = true;
-//                    tempBlockList = blockList;
-                    break;
-                }
-            }
-            else if(block.getMinLevel()<removedBlock.getMaxLevel()){
-                if(isMovable(block)) {
-//                    move(block);
-                    isAnyBoxMovable = true;
-//                    tempBlockList = blockList;
-                    break;
+            if(!removedBlockList.contains(block.getBlock())) {
+                if (block.getMinLevel() < removedBlock.getMinLevel() && block.getMaxLevel() >= removedBlock.getMaxLevel()) {
+                    if (isMovable(block)) {
+                        isAnyBoxMovable = true;
+                        break;
+                    }
+                } else if (block.getMinLevel() < removedBlock.getMinLevel() && block.getMaxLevel() < removedBlock.getMaxLevel()) {
+                    if (isMovable(block)) {
+                        isAnyBoxMovable = true;
+                        break;
+                    }
+                } else if (block.getMinLevel() < removedBlock.getMaxLevel()) {
+                    if (isMovable(block)) {
+                        isAnyBoxMovable = true;
+                        break;
+                    }
                 }
             }
         }
@@ -226,7 +261,10 @@ public class MainActivity extends AppCompatActivity implements GridAdapter.BoxTo
     public void onTouch(GridAdapter.GridHolder holder, int position) {
         int blockNum = boxMap.get(position+1).getBlock();
         Log.v("onTouch",blockNum+"");
-        remove(blockNum);
-        moveBlocks(blockNum);
+        if(boxMap.get(position+1).getBlock()!=0) {
+            remove(blockNum);
+            removedBlockList.add(blockNum);
+            moveBlocks(blockNum);
+        }
     }
 }

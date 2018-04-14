@@ -62,6 +62,10 @@ public class Box {
         this.backgroundColor = colorList[block];
     }
 
+    /**
+     * Method to get the initial configuration
+     * @return a map of 10x6 with each <Box>Box</Box> details
+     */
     public static Map<Integer,Box> initialConfiguration() {
         Map<Integer,Box> boxes = new HashMap<>();
         boxes.put(1,new Box(1, 0));

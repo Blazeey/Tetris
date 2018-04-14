@@ -81,6 +81,10 @@ public class Block {
         this.width = width;
     }
 
+    /**
+     * Returns the initial configuration of the blocks
+     * @return a list containing 19 blocks with their respective boxes in the grid
+     */
     public static List<Block> initialConfiguration(){
         List<Block> blockList = new ArrayList<>();
 

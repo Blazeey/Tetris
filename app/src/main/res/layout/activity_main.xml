@@ -6,10 +6,19 @@
     android:layout_height="match_parent">
 
     <android.support.v7.widget.RecyclerView
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:id="@+id/grid"
+        android:layout_width="wrap_content"
         android:layout_centerInParent="true"
-        android:clipToPadding="false"
-        android:id="@+id/grid"/>
+        android:layout_height="wrap_content"
+        android:layout_margin="10dp" />
 
+    <ImageButton
+        android:id="@+id/refresh"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true"
+        android:layout_below="@id/grid"
+        android:padding="5dp"
+        android:background="@android:color/transparent"
+        android:src="@drawable/ic_refresh_black_24dp" />
 </RelativeLayout>
